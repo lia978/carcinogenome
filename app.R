@@ -360,7 +360,11 @@ get_morpheus_link<-function(url = "toy.gct",
 
 	url<-sprintf('{
 	"dataset" : "%s/%s",
-	"columns" : [ { "field" : "Carcinogenicity", "display" : ["color"] },
+	"columns" : [ { "field" : "id", "display" : ["color"] },
+				  { "field" : "Chemical Name", "display" : ["color"] },
+				  { "field" : "CAS", "display" : ["color"] },
+				  { "field" : "dose (uM)", "display" : ["color"] },
+				  { "field" : "Carcinogenicity", "display" : ["color"] },
 				  { "field" : "Genotoxicity", "display" : ["color"] },
 			      { "field" : "TAS", "display" : ["color"] } ],
 	"rows" : [ { "field" : "genesets", "display" : ["text"] }],
