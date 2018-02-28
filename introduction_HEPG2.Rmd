@@ -33,7 +33,7 @@ Gene set enrichment scores for a given chemical of interest. Gene sets include t
 Connectivity scores measure similarity of profiles of the query chemical to profiles in the Connectivity Map (CMap).
 Scores are calculated at the level of either CMap Perturbagens or Perturbational Classes.
 
-###Marker Explorer
+### Marker Explorer
 
 Interactive explorer for a single queried markers (gene, gene-set, or CMap perturbagen/perturbagen class). 
 
