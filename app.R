@@ -523,7 +523,7 @@ app<-shinyApp(
 	ui = shinyUI(
 		
 		fluidPage(
-			tags$head(tags$script(src = "message-handler.js")),
+			#tags$head(tags$script(src = "message-handler.js")),
 
 			##turn off slider highlighting
 			tags$style(HTML(".irs-bar {background: none; border-top: none; border-bottom: none; border-left:none;}")),
