@@ -543,7 +543,7 @@ app<-shinyApp(
 					        column(11,
 					          includeMarkdown(dat[["about page"]])
 					        ),
-					        img(src="logo.png", align = "left", width = 600)
+					        img(src="../logo.png", align = "left", width = 600)
 					      )
 					),
 
