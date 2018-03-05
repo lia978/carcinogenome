@@ -28,7 +28,25 @@
       border: 2px solid grey;
     }
     .indented {   padding-left: 50pt;   padding-right: 50pt; } 
-    
+
+    /* Override Table */
+    table td, table th {
+      border: 1px solid #ddd; 
+      text-align: center;
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+
+    table {
+      width: 90%;
+      border-collapse: collapse;
+      border: 2px solid black;
+
+
+    }
+            
     /* Add a gray background color and some padding to the footer */
     footer {
       position:absolute;
@@ -77,13 +95,28 @@
   </div>
 </div>
   
-<div class="container-fluid bg-3 text-center">    
-  <h3>Available Datasets</h3><br>
-    <div class="container-fluid bg-3 text-center" style="text-align:center;">
-    <a href="/HEPG2" class="btn btn-primary btn-lg" role="button">HEPG2</a>
-    <a href="/MCF10A" class="btn btn-primary btn-lg" role="button">MCF10A</a>
-    </div>
+
+<div class="main-table">
+<table id="t01" align="center" >
+  <tr>
+    <th width="120">Project</th>
+    <th width="120">Cell line</th> 
+    <th width="400">Description</th>
+  </tr>
+  <tr>
+    <td > <a href = "/HEPG2" > Liver Carcinogenicity </a> </td>
+    <td> HEPG2</td> 
+    <td style='text-align:left;'>This experiment uses 330 selected chemicals for in-vivo liver carcinogenicity testing, including 128 liver carcinogens, 168 non-carcinogens, and 34 miscellaneous chemicals (e.g. nuclear receptor ligands). Chemical carcinogenicity and genotoxicity annotations are based on the Carcinogenicity Potency Database (CPDB), which is the result of tissue-specific long-term animal cancer tests in rodents. In the liver carcinogenome project, HepG2 (liver) cells are exposed to each individual chemical for 24 hours and their gene expression is profiled on the L1000 platform. Each chemical is assayed at 6 doses (2 fold dilutions starting from the highest concentration of 40uM or 20uM) with triplicate profiles generated for each dose...</td>
+  </tr>
+  <tr>
+   
+    <td> <a href = "/HEPG2" > Breast Carcinogenicity </a> </td>
+    <td> MCF10A </td> 
+    <td style='text-align:left;'>This experiment uses 345 selected chemicals for breast carcinogenicity testing, including 120 breast carcinogens, 114 non-carcinogens, and 68 miscellaneous chemicals (e.g. nuclear receptor ligands, BU SRP chemicals, lung carcinogens). Chemical carcinogenicity and genotoxicity annotations are based on the Carcinogenicity Potency Database (CPDB), which is the result of tissue-specific long-term animal cancer tests in rodents, or breast carcinogens published from Rudel et. al., 2007. In the CRCGN project, MCF10A (breast epithelial) cells are exposed to each individual chemical for 24 hours and their gene expression is profiled on the L1000 platform. Each chemical is assayed at 3 doses (3 fold dilutions starting from the highest concentration of 100uM, with the exception of selected BUSRP chemicals...</td>
+</tr>
+</table>
 </div>
+
 
 </div>
 
