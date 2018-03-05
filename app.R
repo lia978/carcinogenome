@@ -754,7 +754,10 @@ app<-shinyApp(
 						conditionalPanel(condition = "!$('html').hasClass('shiny-busy')",
 							uiOutput("t12_combined"))
 				    )		
-				)
+				),
+
+   			tabPanel(HTML("</a></li><li><a href=\"../\">Home"))
+
 			)
 		)
 	),
