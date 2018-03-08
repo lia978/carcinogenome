@@ -754,7 +754,7 @@ app<-shinyApp(
 				     	)),
 
  					column(3,sliderInput("marker_tas_hm", "TAS range", min = 0,  max = maxTAS, 
-	  				value = 0.2, step = 0.1)),
+	  				value = 0.2, step = 0.01)),
 	  				##warning
 	  				textOutput("warning")
  					),
@@ -861,8 +861,8 @@ app<-shinyApp(
 			nrows<-nrow(eset)
 
 			h<-min(nrows*15+200, 3000)
-			w<-min(ncols*15+50, 3000)
-
+			w<-max(min(ncols*15+50, 3000), 400)
+			
 			xsize<-4
 			if (ncols<500) 
 			xsize<-5
@@ -904,8 +904,7 @@ app<-shinyApp(
 			p.heights = p.heights,
 			xsize = xsize,
 			ysize = ysize, 
-			ysizelab = 7,
-			xright = 0.18)
+			ysizelab = 7)
 
 			output[[plot_name]]<-renderPlot({
 				do.call(grid.arrange, p)
