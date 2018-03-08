@@ -18,6 +18,19 @@ if(dat$title == "MCF10A Portal"){
 
 domain<-paste0("https://carcinogenome.org/data/", sub(" .*", "", dat$title))
 
+
+defaults<-list(landmark_de = FALSE, 
+		summarizefunc_de = "median", 
+		filterbyinput_de = c("score", "number"),
+		range_de = c(-2, 2), 
+		numberthresleft_de = 10, 
+		numberthresright_de = 10)
+
+tas<-dat[["Profile Annotation"]]$TAS
+minProf<-3
+maxTAS<-tas[order(tas, decreasing = TRUE)][minProf]
+maxTAS<- floor(maxTAS/0.1)*0.1
+
 to.hex<-function(x){
   cols<-col2rgb(x)
   red<-cols[1]
@@ -59,24 +72,32 @@ customTable<-function(i, ...){
 }
 
 de_opts<-function(){
+
 	bsCollapse(id = "de_opt_panel", 
 	open = "Options",
 	bsCollapsePanel("Options", 
-	column(2, checkboxInput("landmark_de", "Landmark only", value =FALSE)),
+	fluidRow(
+	column(2, 
+
+
+		checkboxInput("landmark_de", "Landmark only", value =defaults[["landmark_de"]])),
 	column(2, selectInput("summarizefunc_de", "Summarization:",
 		sumrules,
-	  selected = "median")),
+	  selected = defaults[["summarizefunc_de"]])),
 
-	column(1,checkboxGroupInput("filterbyinput_de", "Filter by:",
+	column(2,checkboxGroupInput("filterbyinput_de", "Filter by:",
 	             c("score" = "score",
 	               "number" = "number"),
-	             selected = c("score", "number"))),
+	             selected = defaults[["filterbyinput_de"]])),
 	column(2,sliderInput("range_de", "score threshold", min = -10, max = 10, 
-	  value = c(-2,2), step = 0.01)),
-	column(1,sliderInput("numberthresleft_de", "Num +",
-	  min = 0, max = 1000, value = 10, ticks = FALSE, step = 10)),
-	column(1,sliderInput("numberthresright_de", "Num -",
-	  min = 0, max = 1000, value = 10, ticks = FALSE, step = 10))
+	  value = defaults[["range_de"]], step = 0.01)),
+	column(2,sliderInput("numberthresleft_de", "Num +",
+	  min = 0, max = 1000, value = defaults[["numberthresleft_de"]], ticks = FALSE, step = 10)),
+	column(2,sliderInput("numberthresright_de", "Num -",
+	  min = 0, max = 1000, value = defaults[["numberthresleft_de"]], ticks = FALSE, step = 10)) 
+	
+	),
+actionButton("restore", "Restore Defaults", style=mybutton)
 	))
 }
 
@@ -172,8 +193,15 @@ summarize_eset<-function(mat,
   n<-length(x)
   
   if(do.nmarkers){
+  	
+  	ind0<-sum(x > 0)
+  	n1<-min(nmarkers[1], ind0)
+  	n2<-min(nmarkers[2], n-ind0)
     ord<-order(x, decreasing = TRUE)
-    x.ind.nmarkers<-c(ord[1:nmarkers[1]], ord[(n-nmarkers[2]+1):n])
+    n2ind<-n-n2+1
+    if(n1 == 0 & n2 == 0) x.ind.nmarkers<- NULL
+    else if(n2 == 0) x.ind.nmarkers<-ord[1:n1]
+	else  x.ind.nmarkers<-c(ord[1:n1], ord[n2ind:n])
   } else
     x.ind.nmarkers<-1:n
 
@@ -427,7 +455,9 @@ helptextgsfilter<-HTML(paste("filter columns by premade sets or by chemical",
 chemicals<-get_ids_pdat(pdat = dat[["Chemical Annotation"]])
 annot_chem<-dat[["Chemical Annotation"]]
 annot_prof<-dat[["Profile Annotation"]]
-bwbutton<-"color: #000000; background-color: #fff; border-color: #000000"
+
+mybutton<-"color: #98978b; background-color: #F8F5F0; padding: 7px 3px; margin: 1px; text-align:center; 
+display:inline-block; font-size:10px"
 sumrules<-c("max", "median", "mean", "min", "Q1", "Q3")
 markers<-c("Genes", "Gene Sets", "CMap Connectivity")
 
@@ -523,13 +553,15 @@ app<-shinyApp(
 	ui = shinyUI(
 		
 		fluidPage(
-			#tags$head(tags$script(src = "message-handler.js")),
-
-			##turn off slider highlighting
-			tags$style(HTML(".irs-bar {background: none; border-top: none; border-bottom: none; border-left:none;}")),
-   			tags$style(HTML(".irs-bar-edge {background: none; border-top: none; border-bottom: none; border-left:none;}")),
-  
 			theme = shinytheme("sandstone"),
+			#override css here
+			#turn off slider highlighting
+			#adjust button container width
+  			tags$style(HTML(".irs-bar {background: none; border-top: none; border-bottom: none; border-left:none;}
+   			.irs-bar-edge {background: none; border-top: none; border-bottom: none; border-left:none;}
+  			.col-sm-1 {width: 40px; margin: 0px; padding: 0px 0px;}")),
+
+			
 			#tags for the entire page
 			tags$head(includeScript("google-analytics.js")),
 			#added padding to to navbarPage position = fixed-top
@@ -583,15 +615,13 @@ app<-shinyApp(
 	            		tabsetPanel(
 	            	  		tabPanel("Gene Expression", 
 	            	  			fluidRow(
-	            	  			column(10,
+	            	  			column(11,
 	            	  				de_opts()),
 	            	  			column(1,
 	            	  			actionButton("de_hide", "Hide",
-    								style=bwbutton)),
-	            	  			column(1,
+    								style=mybutton)),
 	            	  			actionButton("de_show", "Show",
-    								style=bwbutton)
-	            	  			)), 	                        	  			
+    								style=mybutton)),	                        	  			
 	            	  			DT::dataTableOutput("t4") 
 	            	  			),
 	            	  		tabPanel("Gene Set Enrichment",
@@ -620,7 +650,7 @@ app<-shinyApp(
 				     	selected = "Genes"
 				     	)),
 
- 					column(3,sliderInput("marker_tas", "TAS range", min = 0,  max = 1, 
+ 					column(3,sliderInput("marker_tas", "TAS range", min = 0,  max = maxTAS, 
 	  				value = 0.2, step = 0.1)),
 
 	  				column(3, 
@@ -723,7 +753,7 @@ app<-shinyApp(
 				     	selected = "Genes (Landmark)"
 				     	)),
 
- 					column(3,sliderInput("marker_tas_hm", "TAS range", min = 0,  max = 1, 
+ 					column(3,sliderInput("marker_tas_hm", "TAS range", min = 0,  max = maxTAS, 
 	  				value = 0.2, step = 0.1)),
 	  				##warning
 	  				textOutput("warning")
@@ -917,6 +947,7 @@ app<-shinyApp(
 
 		plot_hist<-function(plot_name, eset, header, markerid, plot = "Density"){
 
+			
 			p1<-get_de_by_gene_hist(markerid, eset,
 	      			annot_prof = dat[["Profile Annotation"]], 
 	      			match_id = "sig_id",
@@ -972,6 +1003,7 @@ app<-shinyApp(
 	      				width = w/130, height = h/35, 
 	      				dpi = 300)
 	      		})
+	      	
 		}
 
 		#Annotation Tables
@@ -997,6 +1029,15 @@ app<-shinyApp(
 	      			)
             }, once = FALSE)
 
+           observeEvent(c(input$restore), {
+            	updateCheckboxInput(session, inputId = "landmark_de", value = defaults[["landmark_de"]])
+            	updateSelectInput(session, inputId = "summarizefunc_de", selected = defaults[["summarizefunc_de"]])
+				updateCheckboxGroupInput(session, inputId = "filterbyinput_de", selected = defaults[["filterbyinput_de"]])
+				updateSelectInput(session, inputId = "range_de", selected = defaults[["range_de"]])
+				updateSliderInput(session, inputId = "numberthresleft_de", value = defaults[["numberthresleft_de"]])
+				updateSliderInput(session, inputId = "numberthresright_de", value = defaults[["numberthresright_de"]])
+           })
+
         observeEvent(input$de_hide, ({
     	updateCollapse(session, "de_opt_panel", close = "Options")
    			}))
@@ -1018,21 +1059,23 @@ app<-shinyApp(
         	)
 
       	#Marker Explorer plots
-		observeEvent(c(input$marker_gene, input$marker_view), {
+		observeEvent(c(input$marker_gene, input$marker_view, input$marker_tas), {
 			es<-get_de_eset(annot_prof = dat[["Profile Annotation"]], 
 				match_id = "sig_id")
+			es<-es[, pData(es)[, "TAS"]>input$marker_tas]
 	    	plot_hist(plot_name = "t7",
 			eset = es,
 			header = "mod Z-scores", 
 			markerid = input$marker_gene, plot = input$marker_view)
             }, once = FALSE)
 
-		observeEvent(c(input$marker_gs, input$marker_view), {
+		observeEvent(c(input$marker_gs, input$marker_view, input$marker_tas), {
 			es<-get_gs_eset(gslist = dat[["Gene Set Enrichment"]], 
 			 	gsname = input$marker_gsname, 
 			 	gsmethod = input$marker_gsmethod, 
 			 	annot_prof = dat[["Profile Annotation"]],
 			 	match_id = "sig_id")
+			es<-es[, pData(es)[, "TAS"]>input$marker_tas]
 	    	plot_hist(plot_name = "t8",
 			eset = es, 
 			header = "Gene Set Scores", 
@@ -1040,11 +1083,12 @@ app<-shinyApp(
 			plot = input$marker_view)
             }, once = FALSE)
 
-		observeEvent(c(input$marker_conn, input$marker_view), {
+		observeEvent(c(input$marker_conn, input$marker_view, input$marker_tas), {
 			es<-get_conn_eset(connlist = dat[["Connectivity"]], 
  		 		conn_name = input$marker_conn_name, 
  		 		annot_prof = dat[["Profile Annotation"]],
 			 	match_id = "sig_id")
+			es<-es[, pData(es)[, "TAS"]>input$marker_tas]
 
 	    	plot_hist(plot_name = "t9",
 			eset = es, 
