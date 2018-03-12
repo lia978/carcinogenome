@@ -476,8 +476,8 @@ Q3<-function(x){
 get_de_by_gene_hist<-function(input, eset, annot_prof, 
 	match_id = "sig_id", 
 	col_id = NA, 
-	col_colors = c("green", "orange", "grey"), 
-	col_names = c("POSITIVE", "NEGATIVE", "NA"), 
+	col_colors = c("grey", "green", "orange", "grey"), 
+	col_names = c("N/A", "-", "+"), 
 	header = "mod Z-scores",
 	tas = 0, 
 	plot = "Density"){
@@ -496,7 +496,17 @@ get_de_by_gene_hist<-function(input, eset, annot_prof,
     	if(plot %in% "Density") {
     		res<-ggplot(df, aes_string(x = "x", fill = "cols"))+ geom_density(position = "identity", alpha = 0.5, ...)
     	} else {
-    		res<-ggplot(df, aes_string(x = "cols", y= "x", fill = "cols"))+ geom_boxplot(position = "identity", alpha = 0.5, ...)
+    		
+    		res<-ggplot(df, aes_string(x = "cols", y= "x", fill = "cols"))+ 
+    		geom_boxplot(position = "identity", 
+    			width = 0.2,
+    			alpha = 0.5, 
+    			outlier.fill = NULL,
+    			#outlier.size = 1, 
+    			#outlier.stroke = NULL,
+    			outlier.alpha = NULL,
+    			...)
+    	
     	}
     	return(res)
     }
@@ -507,13 +517,21 @@ get_de_by_gene_hist<-function(input, eset, annot_prof,
 	    df<-rbind(data.frame(x = x, cols = "query"),
 	    	data.frame(x = background, cols = "background"))
 
+	    df$cols <- factor(df$cols, levels = c("background", "query"))
+
+	    col_vec<-c("grey", "red")
+	    names(col_vec)<-c("background", "query")
 	    p<-plot_wrapper(plot)+
 	    xlab(header) + 
 	    ylab("Count")+ 
 	     scale_fill_manual(name = "Overall", 
-	     	values = c("red","grey"),
-	     	breaks = c("query", "background"),
-	     	labels = c("query", "background"))+
+	     	values = col_vec,
+	     	breaks = names(col_vec),
+	     	labels = names(col_vec)
+	        #values = c("red","grey"),
+	     	#breaks = c("query", "background"),
+	     	#labels = c("query", "background")
+	     	)+
 	    ggtitle(p.title)+
 	    theme_bw()+
 	    theme(plot.title = element_text(hjust = 0.5))
@@ -525,6 +543,9 @@ get_de_by_gene_hist<-function(input, eset, annot_prof,
 	    cols_match<-col_colors
 	    names(cols_match)<-col_names
 	    df<-data.frame(x = x, cols= cols)
+
+	    df$cols <- factor(df$cols, levels = col_names)
+
 	    p<-plot_wrapper(plot)+
 	    scale_fill_manual(
 	    	name = col_id,
@@ -674,12 +695,13 @@ app<-shinyApp(
 				    conditionalPanel("input.marker_gene != false && input.marker_gene != ''",
 				    	conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                             tags$div("Loading...",id="loadmessage")),	
-						conditionalPanel(condition = "!$('html').hasClass('shiny-busy')",
-						downloadLink("t7_download_pdf", "Download pdf"),
-						downloadLink("t7_download_png", "png"),
-				     	plotOutput("t7_1"),
-				     	plotOutput("t7_2"),
-				     	plotOutput("t7_3"))
+						conditionalPanel(condition = "!$('html').hasClass('shiny-busy')",						
+							downloadLink("t7_download_png", "Download png"),
+							downloadLink("t7_download_pdf", "pdf"),
+					     	plotOutput("t7_1"),
+					     	plotOutput("t7_2"),
+					     	plotOutput("t7_3")					     
+				     	)
 				     	)
 
 				    ),
@@ -958,8 +980,8 @@ app<-shinyApp(
 				annot_prof = dat[["Profile Annotation"]], 
 				match_id = "sig_id", 
 				col_id = "Carcinogenicity", 
-				col_colors = c("orange", "green", "grey"), 
-				col_names = c("+", "-", "N/A"),
+				col_colors = c("grey","green", "orange"), 
+				col_names = c("N/A","-", "+"),
 				header = header,
 				tas = input$marker_tas, 
 				plot = plot)
@@ -967,27 +989,30 @@ app<-shinyApp(
 				annot_prof = dat[["Profile Annotation"]], 
 				match_id = "sig_id", 
 				col_id = "Genotoxicity", 
-				col_colors = c("purple", "pink", "grey"), 
-				col_names = c("+", "-", "N/A"),
+				col_colors = c("grey","pink", "purple"), 
+				col_names = c("N/A", "-", "+"),
 				header = header,
 				tas = input$marker_tas,
 				plot = plot)
 
 			w<-1000
 			h<-300
-			output[[paste0(plot_name, "_", 1)]]<-renderPlot(p1,
-	      		width = w, height = h
-	      		)
 
-	      	output[[paste0(plot_name, "_", 2)]]<-renderPlot(p2,
-				width = w, height = h
-	      		)
+			if(plot == "Density"){
+		
+				output[[paste0(plot_name, "_", 1)]]<-renderPlot(p1,
+		      		width = w, height = h
+		      		)
 
-	      	output[[paste0(plot_name, "_", 3)]]<-renderPlot(p3,
-				width = w, height = h
-	      		)
+		      	output[[paste0(plot_name, "_", 2)]]<-renderPlot(p2,
+					width = w, height = h
+		      		)
 
-	      	output[[paste0(plot_name, "_download_pdf")]]<-downloadHandler(
+		      	output[[paste0(plot_name, "_", 3)]]<-renderPlot(p3,
+					width = w, height = h
+		      		)
+
+		      	output[[paste0(plot_name, "_download_pdf")]]<-downloadHandler(
 	      		filename = paste0("carcinogenome_download_", header, "_", markerid, ".pdf"),
 	      		content = function(file){
 	      			ggsave(file, device = "pdf", grid.arrange(p1, p2, p3),
@@ -995,14 +1020,48 @@ app<-shinyApp(
 	      				dpi = 300)
 	      		})
 
-	      	output[[paste0(plot_name, "_download_png")]]<-downloadHandler(
-	      		filename = paste0("carcinogenome_download_", header, "_", markerid, ".png"),
+		      	output[[paste0(plot_name, "_download_png")]]<-downloadHandler(
+		      		filename = paste0("carcinogenome_download_", header, "_", markerid, ".png"),
+		      		content = function(file){
+		      			ggsave(file, device = "png", grid.arrange(p1, p2, p3),
+		      				width = w/130, height = h/35, 
+		      				dpi = 300)
+		      	})
+
+
+			} else if (plot == "Boxplot"){
+			
+				w<-600
+				h<-400
+				
+				output[[paste0(plot_name, "_", 1)]]<-renderPlot(p1,
+		      		width = w, height = h
+		      		)
+
+		      	output[[paste0(plot_name, "_", 2)]]<-renderPlot(p2,
+					width = w, height = h
+		      		)
+
+		      	output[[paste0(plot_name, "_", 3)]]<-renderPlot(p3,
+					width = w, height = h
+		      		)
+
+		      	output[[paste0(plot_name, "_download_pdf")]]<-downloadHandler(
+	      		filename = paste0("carcinogenome_download_", header, "_", markerid, ".pdf"),
 	      		content = function(file){
-	      			ggsave(file, device = "png", grid.arrange(p1, p2, p3),
-	      				width = w/130, height = h/35, 
-	      				dpi = 300)
+	      			ggsave(file, device = "pdf", grid.arrange(p1, p2, p3),
+	      				width = w/70, height = h/35, units = "in",
+	      				dpi = 150)
 	      		})
-	      	
+
+		      	output[[paste0(plot_name, "_download_png")]]<-downloadHandler(
+		      		filename = paste0("carcinogenome_download_", header, "_", markerid, ".png"),
+		      		content = function(file){
+		      			ggsave(file, device = "png", grid.arrange(p1, p2, p3),
+		      				width = w/70, height = h/35, units = "in", 
+		      				dpi = 150)
+		      	})
+	      	}  	
 		}
 
 		#Annotation Tables
@@ -1059,13 +1118,14 @@ app<-shinyApp(
 
       	#Marker Explorer plots
 		observeEvent(c(input$marker_gene, input$marker_view, input$marker_tas), {
+
 			es<-get_de_eset(annot_prof = dat[["Profile Annotation"]], 
 				match_id = "sig_id")
 			es<-es[, pData(es)[, "TAS"]>input$marker_tas]
 	    	plot_hist(plot_name = "t7",
 			eset = es,
 			header = "mod Z-scores", 
-			markerid = input$marker_gene, plot = input$marker_view)
+			markerid = input$marker_gene, plot = input$marker_view)			
             }, once = FALSE)
 
 		observeEvent(c(input$marker_gs, input$marker_view, input$marker_tas), {
@@ -1095,10 +1155,12 @@ app<-shinyApp(
 			markerid = input$marker_conn, 
 			plot = input$marker_view)
             }, once = FALSE)
-		        observe({
+		
+
+		observe({
     		updateSelectizeInput(session, 
     			'marker_gene', 
-    			choices = rownames(dat[["Gene Expression"]])
+    			choices = sort(rownames(dat[["Gene Expression"]]))
     		)
   		})
 
@@ -1106,11 +1168,11 @@ app<-shinyApp(
     		updateSelectizeInput(session, 
     			'marker_gs', 
     			choices = 
- 			rownames(get_gs_eset(gslist = dat[["Gene Set Enrichment"]], 
+ 			sort(rownames(get_gs_eset(gslist = dat[["Gene Set Enrichment"]], 
  				gsname = input$marker_gsname, 
  				gsmethod = input$marker_gsmethod, 
  				annot_prof = dat[["Profile Annotation"]],
-				match_id = "sig_id")
+				match_id = "sig_id"))
     			))
   		})
   		

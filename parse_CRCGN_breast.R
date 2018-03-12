@@ -129,6 +129,8 @@ fData(ge)$pr_is_lmark <-lm
 fData(ge)<-fData(ge)[, c( "pr_gene_symbol", "pr_is_lmark")]
 colnames(fData(ge))<-c("Gene Symbol", "Landmark Gene")
 
+ind<-which(fData(ge)[, "Gene Symbol"] %in% "-666")
+ge<-ge[setdiff(1:nrow(ge), ind),]
 dat[["Gene Expression"]]<-ge
 
 
