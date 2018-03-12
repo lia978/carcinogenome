@@ -503,8 +503,6 @@ get_de_by_gene_hist<-function(input, eset, annot_prof,
     			width = 0.2,
     			alpha = 0.5, 
     			outlier.fill = NULL,
-    			#outlier.size = 1, 
-    			#outlier.stroke = NULL,
     			outlier.alpha = NULL,
     			...)
     	
