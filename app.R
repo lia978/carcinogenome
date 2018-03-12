@@ -172,6 +172,7 @@ get_ids_pdat<-function(pdat,
   res<-lapply(cols, function(i){
   x<-as.character(tab[,i])
   x.uniq<- setdiff(unique(x), union(x[duplicated(x)], val.ignore))
+  x.uniq<-sort(x.uniq)
   })
   names(res)<-cols
   return(res)
