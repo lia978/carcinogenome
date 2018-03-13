@@ -16,17 +16,12 @@
       border-radius: 0;
     }
 
-    /* Override large button */ 
-    .btn-lg {
-      padding:20px 20px;
-      font-size:30px;
-      line-height:1.3333333;
-      border-radius:6px;
-      margin-right: 40px; 
-      margin-left: 40px;
-      background-color: #555555;
-      border: 2px solid grey;
+
+    .jumbotron {
+      padding-top: 15px;
+      padding-bottom: 15px;
     }
+
     .indented {   padding-left: 50pt;   padding-right: 50pt; } 
 
     /* Override Table */
@@ -43,18 +38,19 @@
       width: 90%;
       border-collapse: collapse;
       border: 2px solid black;
-
-
     }
             
     /* Add a gray background color and some padding to the footer */
     footer {
-      position:absolute;
+      position:fixed;
       bottom:0;
+      left:0;
       width:100%;
       background-color: #f2f2f2;
-      padding: 15px;
+      padding:2px;
+      padding-top:5px;
     }
+
   </style>
 </head>
 <body>
@@ -156,11 +152,14 @@
 <br><br><br>
 
 <div class="container-fluid text-center" style="background-color: #eee;">
-  <br>
-  <p>The Carcinogenome Project: Developed by Monti Lab at Boston University
+  <footer>
+  
+  <p>
+    The Carcinogenome Project: Developed by Monti Lab at Boston University
     <br>
     2017
   </p>
+  </footer>
 </div>
 
 </body>
