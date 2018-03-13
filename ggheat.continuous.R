@@ -466,8 +466,9 @@ ggheat.continuous<-function(eset,
 
 	plist$ncol <-1
 	plist$heights <- p.heights
-
+	
 	p.combined<-do.call(arrangeGrob, plist)
+
 
 	if(!is.na(fout))
 		ggsave(p.combined, file = fout)
