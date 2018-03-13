@@ -428,13 +428,6 @@ names(connmap)<-c("Perturbagen Classes", "Perturbagens")
 gsmethods<-c("gsva", "ssgsea", "zscore", "gsproj")
 
 #tooltip texts
-helptextgutc<-HTML(paste("cs: raw weighted connectivity scores",
-              "ns: normalized scores, accounts for cell-line and perturbational type",
-              "ps: percentile normalized scores[-100, 100]",
-              "pcl: PCL (perturbational classes)", 
-              "pert: perturbagen level",
-              "cell: cell-line level",
-              "summary: cell line-summarized level", sep="<br/>"))
 
 helptextgsname<-HTML(paste("Hallmark: MSigDB Hallmark Pathways (v5.0)",
               "C2: MSigDB C2 reactome Pathways (v5.0)",
@@ -446,13 +439,6 @@ helptextgsmethod<-HTML(paste(
               "gsproj: GeneSetProjection for R package montilab:CBMRtools", 
                sep="<br/>"))
 
-helptextgsfilter<-HTML(paste("filter columns by premade sets or by chemical",
-              "premade sets:",
-              "carcinogenicity/genotoxicity based on CPDB mouse and rats data",
-              "D. Sherr suggested chemicals: mainly AHR ligands",
-              "J. Schlezinger suggested chemicals: mainly PPAR ligands",
-               sep="<br/>"))
-
 chemicals<-get_ids_pdat(pdat = dat[["Chemical Annotation"]])
 annot_chem<-dat[["Chemical Annotation"]]
 annot_prof<-dat[["Profile Annotation"]]
@@ -461,9 +447,6 @@ mybutton<-"color: #98978b; background-color: #F8F5F0; padding: 7px 3px; margin: 
 display:inline-block; font-size:10px"
 sumrules<-c("max", "median", "mean", "min", "Q1", "Q3")
 markers<-c("Genes", "Gene Sets", "CMap Connectivity")
-
-
-
 markers_hm<-c("Genes (Landmark)", "Gene Sets", "CMap Connectivity")
 
 Q1<-function(x){ 
@@ -472,6 +455,30 @@ Q1<-function(x){
 
 Q3<-function(x){
 	quantile(x, 0.75, na.rm = T)
+}
+
+get_de_by_gene_table<-function(input, eset, annot_prof, 
+	match_id = "sig_id",  
+	header = "mod Z-scores",
+	tas = 0){
+
+	if(input == "" | is.null(input) | is.na(input) | !(input %in% rownames(eset))) return(NULL)
+
+	pData(eset)<-annot_prof[match(colnames(eset), annot_prof[, match_id]),]
+
+	eset<-eset[, eset$TAS >= tas]
+	
+
+    rowid<-which(rownames(eset) %in% input)[1]
+    x<-as.numeric(exprs(eset)[rowid,])
+    ord<-order(x, decreasing = TRUE)
+    pdat<-pData(eset)
+
+    df<-cbind(value = x, pdat)
+    df<-df[ord,]
+
+    colnames(df)[colnames(df) %in% "value"]<-header
+    return(df)
 }
 
 get_de_by_gene_hist<-function(input, eset, annot_prof, 
@@ -511,7 +518,7 @@ get_de_by_gene_hist<-function(input, eset, annot_prof,
     }
     
     if(is.na(col_id)){
-    	p.title<-paste("Distribution of ", header, " across samples for ", input, " (Overall)", sep = "")
+    	p.title<-paste("Distribution of ", header, " across profiles for ", input, " (Overall)", sep = "")
     	background<-as.numeric(exprs(eset))
 	    df<-rbind(data.frame(x = x, cols = "query"),
 	    	data.frame(x = background, cols = "background"))
@@ -527,16 +534,13 @@ get_de_by_gene_hist<-function(input, eset, annot_prof,
 	     	values = col_vec,
 	     	breaks = names(col_vec),
 	     	labels = names(col_vec)
-	        #values = c("red","grey"),
-	     	#breaks = c("query", "background"),
-	     	#labels = c("query", "background")
 	     	)+
 	    ggtitle(p.title)+
 	    theme_bw()+
 	    theme(plot.title = element_text(hjust = 0.5))
 	}
     if(!is.na(col_id)){
-    	p.title<-paste("Distribution of ", header, " across samples for ", input, " (by ", col_id, ")", sep = "")
+    	p.title<-paste("Distribution of ", header, " across profiles for ", input, " (by ", col_id, ")", sep = "")
     	cols<-pData(eset)[, col_id]
 	    cols<-as.character(cols)
 	    cols_match<-col_colors
@@ -561,13 +565,6 @@ get_de_by_gene_hist<-function(input, eset, annot_prof,
     return(p)
 }
 
-plot_with_link<-function(id){
-	fluidRow(
-	downloadLink(paste0(id, "_download"), "Download"),			    	
-	plotOutput(id)
-	)
-}
-
 app<-shinyApp(
 
 	ui = shinyUI(
@@ -580,8 +577,7 @@ app<-shinyApp(
   			tags$style(HTML(".irs-bar {background: none; border-top: none; border-bottom: none; border-left:none;}
    			.irs-bar-edge {background: none; border-top: none; border-bottom: none; border-left:none;}
   			.col-sm-1 {width: 40px; margin: 0px; padding: 0px 0px;}")),
-
-			
+	
 			#tags for the entire page
 			tags$head(includeScript("google-analytics.js")),
 			#added padding to to navbarPage position = fixed-top
@@ -699,13 +695,14 @@ app<-shinyApp(
 							downloadLink("t7_download_pdf", "pdf"),
 					     	plotOutput("t7_1"),
 					     	plotOutput("t7_2"),
-					     	plotOutput("t7_3")					     
-				     	)
-				     	)
+					     	plotOutput("t7_3"),
+					     	column(8, align = "left", h2(textOutput("t7_text"))),
+					     	DT::dataTableOutput("t7_table")					     
+				     		)
+				    	)
 
 				    ),
 				    conditionalPanel("input.marker == 'Gene Sets'",
-
 
 					marker_gs_opts(),
 					selectizeInput("marker_gs",
@@ -717,17 +714,19 @@ app<-shinyApp(
 				     	choices = "",
 				     	selected = ""
 						),
-
 					
 					conditionalPanel("input.marker_gs != ''",
 				    	conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                             tags$div("Loading...",id="loadmessage")),	
 						conditionalPanel(condition = "!$('html').hasClass('shiny-busy')",
-						downloadLink("t8_download_pdf", "Download pdf"),
-						downloadLink("t8_download_png", "png"),
-				     	plotOutput("t8_1"),
-				     	plotOutput("t8_2"),
-				     	plotOutput("t8_3"))
+							downloadLink("t8_download_pdf", "Download pdf"),
+							downloadLink("t8_download_png", "png"),
+					     	plotOutput("t8_1"),
+					     	plotOutput("t8_2"),
+					     	plotOutput("t8_3"),
+					     	column(8, align = "left", h2(textOutput("t8_text"))),
+						    DT::dataTableOutput("t8_table")
+						    )
 				     	)						
 
 				    ),
@@ -745,17 +744,18 @@ app<-shinyApp(
 				     	selected = ""
 						),
 
-
 				    conditionalPanel("input.marker_conn != ''",
 				    	conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                             tags$div("Loading...",id="loadmessage")),	
 						conditionalPanel(condition = "!$('html').hasClass('shiny-busy')",
-						downloadLink("t9_download_pdf", "Download pdf"),
-						downloadLink("t9_download_png", "png"),
-				     	plotOutput("t9_1"),
-				     	plotOutput("t9_2"),
-				     	plotOutput("t9_3"))
-				     	
+							downloadLink("t9_download_pdf", "Download pdf"),
+							downloadLink("t9_download_png", "png"),
+					     	plotOutput("t9_1"),
+					     	plotOutput("t9_2"),
+					     	plotOutput("t9_3"),
+					     	column(8, align = "left", h2(textOutput("t9_text"))),
+						    DT::dataTableOutput("t9_table")
+						    )				     	
 				     	)				    
 				    )		
 				),
@@ -854,8 +854,6 @@ app<-shinyApp(
 				summarize.func = input$summarizefunc_conn)
 		}
 
-
-
 		plot_heatmap_static<-function(plot_name, eset, tas){
 
 			col_legend<-list(Carcinogenicity = list(col_breaks = c("+", "-", "N/A"), 
@@ -866,8 +864,6 @@ app<-shinyApp(
 			col_labels = c("+", "-", "N/A")))
 
 			hmcolors<-function(...) scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, ...)
-
-			
 
 			eset<-eset[, pData(eset)[, "TAS"]>= tas]
 			ind.remove<-apply(exprs(eset), 1, function(i){
@@ -963,8 +959,6 @@ app<-shinyApp(
 	    	})
 		}
 
-
-
 		plot_hist<-function(plot_name, eset, header, markerid, plot = "Density"){
 
 			
@@ -1027,7 +1021,6 @@ app<-shinyApp(
 		      				dpi = 300)
 		      	})
 
-
 			} else if (plot == "Boxplot"){
 			
 				w<-600
@@ -1061,6 +1054,21 @@ app<-shinyApp(
 		      				dpi = 150)
 		      	})
 	      	}  	
+		}
+
+		plot_table<-function(plot_name, eset, header, markerid){
+			tab<-get_de_by_gene_table(markerid, eset, 
+				annot_prof = dat[["Profile Annotation"]], 
+				match_id = "sig_id",  
+				header = header,
+				tas = input$marker_tas)
+
+			output[[plot_name]]<-customTable(tab)
+			
+		}
+
+		plot_text<-function(plot_name, header){
+			output[[plot_name]]<-renderText(paste0("Table of profiles ranked by ", header))
 		}
 
 		#Annotation Tables
@@ -1121,10 +1129,20 @@ app<-shinyApp(
 			es<-get_de_eset(annot_prof = dat[["Profile Annotation"]], 
 				match_id = "sig_id")
 			es<-es[, pData(es)[, "TAS"]>input$marker_tas]
+	    	header<-"mod Z-scores"
 	    	plot_hist(plot_name = "t7",
 			eset = es,
-			header = "mod Z-scores", 
-			markerid = input$marker_gene, plot = input$marker_view)			
+			header = header, 
+			markerid = input$marker_gene, plot = input$marker_view)
+
+	    	plot_text(plot_name = "t7_text", header = header)
+
+	    	plot_table(plot_name = "t7_table",
+			eset = es,
+			header = header, 
+			markerid = input$marker_gene)
+
+
             }, once = FALSE)
 
 		observeEvent(c(input$marker_gs, input$marker_view, input$marker_tas), {
@@ -1134,11 +1152,21 @@ app<-shinyApp(
 			 	annot_prof = dat[["Profile Annotation"]],
 			 	match_id = "sig_id")
 			es<-es[, pData(es)[, "TAS"]>input$marker_tas]
+			header<-"Gene Set Scores"
+
 	    	plot_hist(plot_name = "t8",
 			eset = es, 
-			header = "Gene Set Scores", 
+			header = header, 
 			markerid = input$marker_gs, 
 			plot = input$marker_view)
+
+	    	plot_text(plot_name = "t8_text", header = header)
+
+			plot_table(plot_name = "t8_table",
+			eset = es,
+			header = header, 
+			markerid = input$marker_gs)
+
             }, once = FALSE)
 
 		observeEvent(c(input$marker_conn, input$marker_view, input$marker_tas), {
@@ -1147,12 +1175,21 @@ app<-shinyApp(
  		 		annot_prof = dat[["Profile Annotation"]],
 			 	match_id = "sig_id")
 			es<-es[, pData(es)[, "TAS"]>input$marker_tas]
-
+			header<- "Connectivity Score (Percentile)"
+	    	
 	    	plot_hist(plot_name = "t9",
 			eset = es, 
-			header = "Connectivity Score (Percentile)", 
+			header = header, 
 			markerid = input$marker_conn, 
 			plot = input$marker_view)
+
+	    	plot_text(plot_name = "t9_text", header = header)
+
+			plot_table(plot_name = "t9_table",
+			eset = es,
+			header = header, 
+			markerid = input$marker_conn)
+
             }, once = FALSE)
 		
 
@@ -1199,7 +1236,6 @@ app<-shinyApp(
 				}
             }, once = FALSE)
 
-
   		##Heatmap marker Exploper
 		observeEvent(c(input$marker_hm, 
 			input$marker_tas_hm, 
@@ -1240,11 +1276,5 @@ app<-shinyApp(
 				}
             }, once = FALSE)
 
-		})
-
-
-
-		
-
-	
+		})	
 )
